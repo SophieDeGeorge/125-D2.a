@@ -8,6 +8,7 @@ type Point = { x: number; y: number };
 type Line = Point[];
 let curLine: Line;
 let lines: Line[] = [];
+const redoStack: Line[] = [];
 
 ////////////////////////////////       Cavnas Creation         ////////////////////////////////////////////////////////
 const canvas = document.createElement("canvas");
@@ -51,7 +52,6 @@ canvas.addEventListener("mouseup", (_e) => {
 
 ////////////////////////////////       Redraw         ////////////////////////////////////////////////////////
 function redraw() {
-  console.log("redraw");
   if (ctx) {
     ctx.clearRect(0, 0, canvas.width, canvas.height); // Clear canvas from 0,0 to maxwidth, maxheight
     for (const line of lines) { // For each line in lines array,
@@ -77,6 +77,40 @@ document.body.append(clearButton);
 if (ctx) {
   clearButton.addEventListener("click", () => {
     ctx.clearRect(0, 0, canvas.width, canvas.height);
+    /* // Allows for redo-ing a clear, but only goes line-by-line, merge lines into one and push onto redostack?
+    while (lines.length > 0) {
+      redoStack.push(lines.pop() as Line);
+    }
+    */
     lines = [];
   });
 }
+
+////////////////////////////////       Undo Button         ////////////////////////////////////////////////////////
+// Undo Button
+const undoButton = document.createElement("button");
+undoButton.innerHTML = "undo";
+document.body.append(undoButton);
+
+// Undo Button Event Listener
+undoButton.addEventListener("click", () => {
+  if (ctx && (lines.length > 0)) {
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    redoStack.push(lines.pop() as Line);
+    canvas.dispatchEvent(new Event("drawing-changed"));
+  }
+});
+
+////////////////////////////////       Redo Button         ////////////////////////////////////////////////////////
+// Redo Button
+const redoButton = document.createElement("button");
+redoButton.innerHTML = "redo";
+document.body.append(redoButton);
+
+// Redo button event listener
+redoButton.addEventListener("click", () => {
+  if (ctx && (redoStack.length > 0)) {
+    lines.push(redoStack.pop() as Line);
+  }
+  canvas.dispatchEvent(new Event("drawing-changed")); // Repeating code, Make function
+});
