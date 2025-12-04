@@ -24,6 +24,8 @@ canvas.width = 256;
 canvas.height = 256;
 canvas.style.cursor = "none";
 document.body.append(canvas);
+const buttonContainer = document.createElement("div");
+document.body.append(buttonContainer);
 
 canvas.addEventListener("drawing-changed", redraw);
 canvas.addEventListener("tool-changed", redraw);
@@ -155,7 +157,8 @@ function redraw() {
 // Clear Button
 const clearButton = document.createElement("button");
 clearButton.innerHTML = "clear";
-document.body.append(clearButton);
+//document.body.append(clearButton);
+buttonContainer.appendChild(clearButton);
 
 // Clear Button Event Listener
 if (ctx) {
@@ -171,7 +174,7 @@ if (ctx) {
 // Undo Button
 const undoButton = document.createElement("button");
 undoButton.innerHTML = "undo";
-document.body.append(undoButton);
+buttonContainer.appendChild(undoButton);
 
 // Undo Button Event Listener
 undoButton.addEventListener("click", () => {
@@ -188,7 +191,7 @@ undoButton.addEventListener("click", () => {
 // Button
 const redoButton = document.createElement("button");
 redoButton.innerHTML = "redo";
-document.body.append(redoButton);
+buttonContainer.appendChild(redoButton);
 
 // Redo button event listener
 redoButton.addEventListener("click", () => {
@@ -208,7 +211,7 @@ thinButton.style.backgroundColor = "transparent";
 if (curBrushSize == brushThin) {
   thinButton.style.backgroundColor = "yellow";
 }
-document.body.append(thinButton);
+buttonContainer.appendChild(thinButton);
 
 // Event Listener
 thinButton.addEventListener("click", () => {
@@ -226,7 +229,7 @@ thinButton.addEventListener("click", () => {
 const thickButton = document.createElement("button");
 thickButton.innerHTML = "Thick";
 thickButton.style.backgroundColor = "transparent";
-document.body.append(thickButton);
+buttonContainer.appendChild(thickButton);
 
 // Event Listener
 thickButton.addEventListener("click", () => {
@@ -237,3 +240,22 @@ thickButton.addEventListener("click", () => {
   }
 });
 // #endregion
+
+//#region Sticker Buttons
+const stickers: string[] = [];
+stickers.push("👁️");
+stickers.push("🐶");
+stickers.push("🥞");
+//#endregion
+
+stickers.forEach((element) => {
+  const newButton: HTMLButtonElement = document.createElement(
+    "button",
+  ) as HTMLButtonElement;
+  newButton.className = "sticker-buttons";
+  newButton.innerHTML = element;
+
+  newButton.addEventListener("click", () => {
+  });
+  buttonContainer.appendChild(newButton);
+});
