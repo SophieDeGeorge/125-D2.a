@@ -11,9 +11,10 @@ const redoLines: LineCommand[] = [];
 let curLine: LineCommand;
 const brushThin: number = 1.0;
 const brushThick: number = 3.0;
-let brushSize = brushThin;
+let curBrushSize: number = brushThin;
 
-////////////////////////////////       #region Cavnas Creation         ////////////////////////////////////////////////////////
+//#region Canvas
+////////////////////////////////       Cavnas Creation         ////////////////////////////////////////////////////////
 
 const canvas = document.createElement("canvas");
 const ctx = canvas.getContext("2d");
@@ -25,12 +26,13 @@ document.body.append(canvas);
 canvas.addEventListener("drawing-changed", redraw);
 // #endregion
 
-////////////////////////////////       #region Mouse Input          ////////////////////////////////////////////////////////
+//#region Mouse Input
+////////////////////////////////       Mouse Input          ////////////////////////////////////////////////////////
 
 canvas.addEventListener("mousedown", (e) => {
   cursor.active = true;
 
-  curLine = new LineCommand({ x: e.offsetX, y: e.offsetY });
+  curLine = new LineCommand({ x: e.offsetX, y: e.offsetY }, curBrushSize);
   lines.push(curLine);
   canvas.dispatchEvent(new Event("drawing-changed"));
 });
@@ -47,19 +49,25 @@ canvas.addEventListener("mouseup", (_e) => {
   cursor.active = false;
   canvas.dispatchEvent(new Event("drawing-changed"));
 });
+//#endregion
+
+//#region LineCommand
+////////////////////////////////       Line Command Class          ////////////////////////////////////////////////////////
 
 class LineCommand {
   line: Point[] = [];
+  brushSize: number;
 
-  constructor(startingPoint: Point) {
+  constructor(startingPoint: Point, width: number) {
     this.line = [startingPoint];
+    this.brushSize = width;
   }
 
   display(ctx: CanvasRenderingContext2D) {
     if (this.line.length < 1) {
       return;
     }
-    ctx.lineWidth = brushSize;
+    ctx.lineWidth = this.brushSize;
     ctx.beginPath();
     ctx.moveTo(this.line[0].x, this.line[0].y); // start at the first point
     this.line.forEach((point: Point) => ctx.lineTo(point.x, point.y)); // move endpoint to next point
@@ -72,7 +80,8 @@ class LineCommand {
 }
 // #endregion
 
-////////////////////////////////       #region Redraw         ////////////////////////////////////////////////////////
+//#region Redraw
+////////////////////////////////       Redraw Function        ////////////////////////////////////////////////////////
 function redraw() {
   if (ctx) {
     ctx.clearRect(0, 0, canvas.width, canvas.height); // Clear canvas from 0,0 to maxwidth, maxheight
@@ -82,7 +91,8 @@ function redraw() {
 }
 // #endregion
 
-////////////////////////////////       #region Clear Button         ////////////////////////////////////////////////////////
+//#region Clear Button
+////////////////////////////////       Clear Button         ////////////////////////////////////////////////////////
 // Clear Button
 const clearButton = document.createElement("button");
 clearButton.innerHTML = "clear";
@@ -97,7 +107,8 @@ if (ctx) {
 }
 // #endregion
 
-////////////////////////////////       #region Undo Button         ////////////////////////////////////////////////////////
+//#region Undo Button
+////////////////////////////////       Undo Button         ////////////////////////////////////////////////////////
 // Undo Button
 const undoButton = document.createElement("button");
 undoButton.innerHTML = "undo";
@@ -113,7 +124,8 @@ undoButton.addEventListener("click", () => {
 });
 // #endregion
 
-////////////////////////////////       #region Redo Button         ////////////////////////////////////////////////////////
+//#region Redo Button
+////////////////////////////////       Redo Button         ////////////////////////////////////////////////////////
 // Button
 const redoButton = document.createElement("button");
 redoButton.innerHTML = "redo";
@@ -128,27 +140,29 @@ redoButton.addEventListener("click", () => {
 });
 // #endregion
 
-////////////////////////////////       #region Thin Button         ////////////////////////////////////////////////////////
+//#region Thin Button
+////////////////////////////////       Thin Button         ////////////////////////////////////////////////////////
 // Button
 const thinButton = document.createElement("button");
 thinButton.innerHTML = "Thin";
 thinButton.style.backgroundColor = "transparent";
-if (brushSize == brushThin) {
+if (curBrushSize == brushThin) {
   thinButton.style.backgroundColor = "yellow";
 }
 document.body.append(thinButton);
 
 // Event Listener
 thinButton.addEventListener("click", () => {
-  if (brushSize != brushThin) {
-    brushSize = brushThin;
+  if (curBrushSize != brushThin) {
+    curBrushSize = brushThin;
     thinButton.style.backgroundColor = "yellow";
     thickButton.style.backgroundColor = "transparent";
   }
 });
 // #endregion
 
-////////////////////////////////       #region Thick Button         ////////////////////////////////////////////////////////
+//#region Thick Button
+////////////////////////////////       Thick Button         ////////////////////////////////////////////////////////
 // Button
 const thickButton = document.createElement("button");
 thickButton.innerHTML = "Thick";
@@ -157,8 +171,8 @@ document.body.append(thickButton);
 
 // Event Listener
 thickButton.addEventListener("click", () => {
-  if (brushSize != brushThick) {
-    brushSize = brushThick;
+  if (curBrushSize != brushThick) {
+    curBrushSize = brushThick;
     thickButton.style.backgroundColor = "yellow";
     thinButton.style.backgroundColor = "transparent";
   }
