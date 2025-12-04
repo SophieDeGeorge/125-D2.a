@@ -15,7 +15,10 @@ let curBrushSize: number = brushThin;
 let toolPreview: ToolPreviewCommand | null = null;
 let stickerPreview: StickerPreviewCommand | null = null;
 let brushType: string = "brush";
-let curSticker: string;
+let stickerString: string;
+let curSticker: StickerCommand;
+const stickers: StickerCommand[] = [];
+const redoStickers: StickerCommand[] = [];
 
 //#region Canvas
 ////////////////////////////////       Cavnas Creation         ////////////////////////////////////////////////////////
@@ -34,6 +37,22 @@ canvas.addEventListener("drawing-changed", redraw);
 canvas.addEventListener("tool-changed", redraw);
 // #endregion
 
+//#region Event System
+const bus: EventTarget = new EventTarget();
+
+function notify(name: string) {
+  bus.dispatchEvent(new Event(name));
+}
+
+bus.addEventListener("drawing-changed", () => {
+  redraw();
+});
+
+bus.addEventListener("tool-changed", () => {
+  redraw();
+});
+//#endregion
+
 //#region Mouse Input
 ////////////////////////////////       Mouse Input          ////////////////////////////////////////////////////////
 canvas.addEventListener("mouseover", (e) => {
@@ -44,9 +63,10 @@ canvas.addEventListener("mouseover", (e) => {
     );
     stickerPreview = new StickerPreviewCommand(
       { x: e.offsetX, y: e.offsetY },
-      curSticker,
+      stickerString,
     );
-    canvas.dispatchEvent(new Event("tool-changed"));
+    //canvas.dispatchEvent(new Event("tool-changed"));
+    notify("tool-changed");
   }
 });
 
@@ -57,33 +77,49 @@ canvas.addEventListener("mouseenter", (e) => {
   );
   stickerPreview = new StickerPreviewCommand(
     { x: e.offsetX, y: e.offsetY },
-    curSticker,
+    stickerString,
   );
-  canvas.dispatchEvent(new Event("tool-changed"));
+  //canvas.dispatchEvent(new Event("tool-changed"));
+  notify("tool-changed");
 });
 
 canvas.addEventListener("mouseout", (_e) => {
   toolPreview = null;
   stickerPreview = null;
-  canvas.dispatchEvent(new Event("tool-changed"));
+  //canvas.dispatchEvent(new Event("tool-changed"));
+  notify("tool-changed");
   console.log("mouse out");
 });
 
 canvas.addEventListener("mousedown", (e) => {
   toolPreview = null;
   stickerPreview = null;
-  canvas.dispatchEvent(new Event("tool-changed"));
+  notify("tool-changed");
   cursor.active = true;
 
-  curLine = new LineCommand({ x: e.offsetX, y: e.offsetY }, curBrushSize);
-  lines.push(curLine);
-  canvas.dispatchEvent(new Event("drawing-changed"));
+  if (brushType == "brush") {
+    curLine = new LineCommand({ x: e.offsetX, y: e.offsetY }, curBrushSize);
+    lines.push(curLine);
+
+    notify("drawing-changed");
+  } else if (brushType == "sticker") {
+    curSticker = new StickerCommand(
+      { x: e.offsetX, y: e.offsetY },
+      stickerString,
+    );
+    stickers.push(curSticker);
+  }
 });
 
 canvas.addEventListener("mousemove", (e) => {
   if (cursor.active) {
-    curLine.drag({ x: e.offsetX, y: e.offsetY });
-    canvas.dispatchEvent(new Event("drawing-changed"));
+    if (brushType == "brush") {
+      curLine.drag({ x: e.offsetX, y: e.offsetY });
+    } else if (brushType == "sticker") {
+      curSticker.drag({ x: e.offsetX, y: e.offsetY });
+    }
+
+    notify("drawing-changed");
   } else {
     toolPreview = new ToolPreviewCommand(
       { x: e.offsetX, y: e.offsetY },
@@ -91,16 +127,18 @@ canvas.addEventListener("mousemove", (e) => {
     );
     stickerPreview = new StickerPreviewCommand(
       { x: e.offsetX, y: e.offsetY },
-      curSticker,
+      stickerString,
     );
-    canvas.dispatchEvent(new Event("tool-changed"));
+    //canvas.dispatchEvent(new Event("tool-changed"));
+    notify("tool-changed");
   }
 });
 
 // On mouseUp, stop drawing
 canvas.addEventListener("mouseup", (_e) => {
   cursor.active = false;
-  canvas.dispatchEvent(new Event("drawing-changed"));
+
+  notify("drawing-changed");
 });
 //#endregion
 
@@ -133,20 +171,27 @@ class LineCommand {
 }
 // #endregion
 
-class _StickerCommand {
+class StickerCommand {
   point: Point;
   text: string;
+  rotation: number = 0;
 
   constructor(point: Point, text: string) {
     this.point = point;
     this.text = text;
   }
 
-  displaySticker() {
+  displaySticker(ctx: CanvasRenderingContext2D) {
     if (ctx) {
       ctx.font = "50px sans serif";
+      ctx.rotate(this.rotation);
       ctx.fillText(this.text, this.point.x, this.point.y);
     }
+  }
+
+  drag(point: Point) {
+    console.log("Sticker  drag");
+    this.rotation = Math.atan2(point.y - this.point.y, point.x - this.point.x);
   }
 }
 
@@ -181,7 +226,14 @@ class StickerPreviewCommand {
   }
 
   DrawStickerPreview(ctx: CanvasRenderingContext2D) {
+    ctx.font = "50px sans serif";
     ctx.fillText(this.text, this.point.x, this.point.y);
+  }
+
+  drag(point: Point) {
+    console.log("Sticker preview drag");
+    this.point.x = point.x;
+    this.point.y = point.y;
   }
 }
 
@@ -196,6 +248,7 @@ function redraw() {
     if (toolPreview && (brushType == "brush")) {
       toolPreview.DrawPreview(ctx);
     }
+    stickers.forEach((sticker: StickerCommand) => sticker.displaySticker(ctx));
     if (stickerPreview && (brushType == "sticker")) {
       stickerPreview.DrawStickerPreview(ctx);
     }
@@ -216,6 +269,7 @@ if (ctx) {
   clearButton.addEventListener("click", () => {
     ctx.clearRect(0, 0, canvas.width, canvas.height);
     lines.splice(0, lines.length);
+    stickers.splice(0, stickers.length);
   });
 }
 // #endregion
@@ -231,9 +285,17 @@ buttonContainer.appendChild(undoButton);
 undoButton.addEventListener("click", () => {
   if (ctx && (lines.length > 0)) {
     ctx.clearRect(0, 0, canvas.width, canvas.height);
-    redoLines.push(lines.pop() as LineCommand);
-    canvas.dispatchEvent(new Event("drawing-changed"));
+    if (brushType == "brush") {
+      redoLines.push(lines.pop() as LineCommand);
+    }
   }
+  if (ctx && (stickers.length > 0)) {
+    if (brushType == "sticker") {
+      redoStickers.push(stickers.pop() as StickerCommand);
+    }
+  }
+
+  notify("drawing-changed");
 });
 // #endregion
 
@@ -247,9 +309,17 @@ buttonContainer.appendChild(redoButton);
 // Redo button event listener
 redoButton.addEventListener("click", () => {
   if (ctx && (redoLines.length > 0)) {
-    lines.push(redoLines.pop() as LineCommand);
+    if (brushType == "brush") {
+      lines.push(redoLines.pop() as LineCommand);
+    }
   }
-  canvas.dispatchEvent(new Event("drawing-changed")); // Repeating code, Make function
+  if (ctx && (redoStickers.length > 0)) {
+    if (brushType == "sticker") {
+      stickers.push(redoStickers.pop() as StickerCommand);
+    }
+  }
+
+  notify("drawing-changed");
 });
 // #endregion
 
@@ -295,12 +365,12 @@ thickButton.addEventListener("click", () => {
 // #endregion
 
 //#region Sticker Buttons
-const stickers: string[] = [];
-stickers.push("👁️");
-stickers.push("🐶");
-stickers.push("🥞");
+const stickerButtons: string[] = [];
+stickerButtons.push("👁️");
+stickerButtons.push("🐶");
+stickerButtons.push("🥞");
 
-stickers.forEach((element) => {
+stickerButtons.forEach((element) => {
   const newButton: HTMLButtonElement = document.createElement(
     "button",
   ) as HTMLButtonElement;
@@ -308,7 +378,7 @@ stickers.forEach((element) => {
   newButton.innerHTML = element;
 
   newButton.addEventListener("click", () => {
-    curSticker = element;
+    stickerString = element;
     brushType = "sticker";
     console.log(brushType);
   });
