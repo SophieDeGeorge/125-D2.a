@@ -24,7 +24,7 @@ const redoStickers: StickerCommand[] = [];
 ////////////////////////////////       Cavnas Creation         ////////////////////////////////////////////////////////
 
 const canvas = document.createElement("canvas");
-const ctx = canvas.getContext("2d");
+const ctx = canvas.getContext("2d")!;
 const cursor = { active: false, x: 0, y: 0 };
 canvas.width = 256;
 canvas.height = 256;
@@ -33,8 +33,8 @@ document.body.append(canvas);
 const buttonContainer = document.createElement("div");
 document.body.append(buttonContainer);
 
-canvas.addEventListener("drawing-changed", redraw);
-canvas.addEventListener("tool-changed", redraw);
+//canvas.addEventListener("drawing-changed", redraw(ctx));
+//canvas.addEventListener("tool-changed", redraw(ctx));
 // #endregion
 
 //#region Event System
@@ -45,11 +45,11 @@ function notify(name: string) {
 }
 
 bus.addEventListener("drawing-changed", () => {
-  redraw();
+  redraw(ctx);
 });
 
 bus.addEventListener("tool-changed", () => {
-  redraw();
+  redraw(ctx);
 });
 //#endregion
 
@@ -246,16 +246,23 @@ class StickerPreviewCommand {
 
 //#region Redraw
 ////////////////////////////////       Redraw Function        ////////////////////////////////////////////////////////
-function redraw() {
-  if (ctx) {
-    ctx.clearRect(0, 0, canvas.width, canvas.height); // Clear canvas from 0,0 to maxwidth, maxheight
-    lines.forEach((line: LineCommand) => line.display(ctx));
+function redraw(drawCTX: CanvasRenderingContext2D) {
+  if (drawCTX) {
+    drawCTX.clearRect(0, 0, canvas.width, canvas.height); // Clear canvas from 0,0 to maxwidth, maxheight
+    drawCTX.fillStyle = "white";
+    drawCTX.fillRect(0, 0, 1024, 1024);
+    drawCTX.fillStyle = "black";
+    lines.forEach((line: LineCommand) =>
+      line.display(drawCTX as CanvasRenderingContext2D)
+    );
     if (toolPreview && (brushType == "brush")) {
-      toolPreview.DrawPreview(ctx);
+      toolPreview.DrawPreview(drawCTX);
     }
-    stickers.forEach((sticker: StickerCommand) => sticker.displaySticker(ctx));
+    stickers.forEach((sticker: StickerCommand) =>
+      sticker.displaySticker(drawCTX as CanvasRenderingContext2D)
+    );
     if (stickerPreview && (brushType == "sticker")) {
-      stickerPreview.DrawStickerPreview(ctx);
+      stickerPreview.DrawStickerPreview(drawCTX);
     }
   }
 }
@@ -270,13 +277,14 @@ clearButton.innerHTML = "clear";
 buttonContainer.appendChild(clearButton);
 
 // Clear Button Event Listener
-if (ctx) {
-  clearButton.addEventListener("click", () => {
+
+clearButton.addEventListener("click", () => {
+  if (ctx) {
     ctx.clearRect(0, 0, canvas.width, canvas.height);
     lines.splice(0, lines.length);
     stickers.splice(0, stickers.length);
-  });
-}
+  }
+});
 // #endregion
 
 //#region Undo Button
@@ -369,6 +377,7 @@ thickButton.addEventListener("click", () => {
 });
 // #endregion
 
+//#region Add Button
 const addButton = document.createElement("button");
 addButton.innerHTML = "+";
 addButton.style.backgroundColor = "transparent";
@@ -380,6 +389,38 @@ addButton.addEventListener("click", () => {
     CreateStickerButton(result);
   }
 });
+//#endregion
+
+//#region Export Button
+const exportButton = document.createElement("button");
+exportButton.innerHTML = "Export";
+exportButton.style.backgroundColor = "transparent";
+buttonContainer.appendChild(exportButton);
+
+exportButton.addEventListener("click", () => {
+  const exportCanvas: HTMLCanvasElement = document.createElement(
+    "canvas",
+  ) as HTMLCanvasElement;
+  //exportCanvas.width = 1024;
+  //exportCanvas.height = 1024;
+  exportCanvas.setAttribute("width", "1024px");
+  exportCanvas.setAttribute("height", "1024px");
+  const exportCtx = exportCanvas.getContext(
+    "2d",
+  ) as CanvasRenderingContext2D;
+
+  exportCtx.scale(4, 4);
+  exportCtx.save();
+  redraw(exportCtx);
+
+  const anchor = document.createElement("a");
+  anchor.href = canvas.toDataURL("image/png");
+  anchor.download = "sketchpad.png";
+  anchor.click();
+
+  //notify("drawing-changed");
+});
+//#endregion
 
 function CreateStickerButton(emoji: string) {
   const newButton: HTMLButtonElement = document.createElement(
