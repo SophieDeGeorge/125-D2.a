@@ -366,22 +366,17 @@ exportButton.addEventListener("click", () => {
   ) as HTMLCanvasElement;
   exportCanvas.width = 1024;
   exportCanvas.height = 1024;
-  exportCanvas.setAttribute("width", "1024px");
-  exportCanvas.setAttribute("height", "1024px");
-  const exportCtx = exportCanvas.getContext(
+  const exportCtx: CanvasRenderingContext2D = exportCanvas.getContext(
     "2d",
   ) as CanvasRenderingContext2D;
-
   exportCtx.scale(4, 4);
-  exportCtx.save();
-  //redraw(exportCtx);
+  exportCtx.textAlign = "center";
+  redraw(exportCtx);
 
   const anchor = document.createElement("a");
-  anchor.href = canvas.toDataURL("image/png");
+  anchor.href = exportCanvas.toDataURL("image/png");
   anchor.download = "sketchpad.png";
   anchor.click();
-
-  //notify("drawing-changed");
 });
 //#endregion
 
