@@ -1,4 +1,44 @@
 canvas {
   border: thin solid black;
   border-radius: 25px;
+  position: absolute;
+  left: 50%;
+  right: 50%;
+  top: 20%;
+  transform: translate(-50%, -50%);
+  text-align: center;
+}
+
+.function-buttons {
+  border: thin solid black;
+  border-radius: 10px;
+  background-color: white;
+  width: 75px;
+}
+
+.function-buttons,
+div {
+  text-align: center;
+  margin-top: 7%;
+}
+
+.tool-bar {
+  border: thin solid black;
+  border-radius: 50px;
+  background-color: white;
+  width: 75px;
+}
+
+.options {
+  border: thin solid black;
+  border-radius: 50px;
+  background-color: white;
+  width: 75px;
+}
+
+.sticker-buttons {
+  border: thin solid black;
+  border-radius: 100px;
+  background-color: white;
+  width: 75px;
 }

@@ -1,7 +1,8 @@
 import "./style.css";
 
 document.body.innerHTML = `
-  <h1>Draw Pad</h1>
+  <center><h1>Draw Pad</h1><center>
+  
 `;
 
 type Point = { x: number; y: number };
@@ -11,6 +12,7 @@ let curBrushSize: number = brushThin;
 let toolPreview: Command | null = null;
 let toolType: string = "brush";
 let stickerString: string;
+const stickerSize: string = "30px sans serif";
 
 //#region Canvas
 ////////////////////////////////       Cavnas Creation         ////////////////////////////////////////////////////////
@@ -99,7 +101,7 @@ class StickerCommand extends Command {
   }
 
   override display(ctx: CanvasRenderingContext2D): void {
-    ctx.font = "50px sans serif";
+    ctx.font = stickerSize;
     ctx.fillText(this.text, this.point.x, this.point.y);
   }
 
@@ -147,14 +149,14 @@ class StickerPreviewCommand extends Command {
   }
 
   override display(ctx: CanvasRenderingContext2D) {
-    ctx.font = "50px sans serif";
+    ctx.font = stickerSize;
     ctx.fillText(this.text, this.point.x, this.point.y);
   }
 
   override drag(point: Point) {
     //console.log("Sticker preview drag");
     this.point = point;
-    ctx.font = "50px sans serif";
+    ctx.font = stickerSize;
     ctx.fillText(this.text, this.point.x, this.point.y);
   }
 }
@@ -255,7 +257,8 @@ canvas.addEventListener("mouseup", (e) => {
 ////////////////////////////////       Clear Button         ////////////////////////////////////////////////////////
 // Clear Button
 const clearButton = document.createElement("button");
-clearButton.innerHTML = "clear";
+clearButton.innerHTML = "Clear";
+clearButton.className = "function-buttons";
 buttonContainer.appendChild(clearButton);
 
 // Clear Button Event Listener
@@ -269,7 +272,8 @@ clearButton.addEventListener("click", () => {
 ////////////////////////////////       Undo Button         ////////////////////////////////////////////////////////
 // Undo Button
 const undoButton = document.createElement("button");
-undoButton.innerHTML = "undo";
+undoButton.innerHTML = "Undo";
+undoButton.className = "function-buttons";
 buttonContainer.appendChild(undoButton);
 
 // Undo Button Event Listener
@@ -286,7 +290,8 @@ undoButton.addEventListener("click", () => {
 ////////////////////////////////       Redo Button         ////////////////////////////////////////////////////////
 // Button
 const redoButton = document.createElement("button");
-redoButton.innerHTML = "redo";
+redoButton.innerHTML = "Redo";
+redoButton.className = "function-buttons";
 buttonContainer.appendChild(redoButton);
 
 // Redo button event listener
@@ -304,10 +309,9 @@ redoButton.addEventListener("click", () => {
 // Button
 const thinButton = document.createElement("button");
 thinButton.innerHTML = "Thin";
-thinButton.style.backgroundColor = "transparent";
-if (curBrushSize == brushThin) {
-  thinButton.style.backgroundColor = "yellow";
-}
+thinButton.className = "tool-bar";
+thinButton.style.backgroundColor = "yellow";
+
 buttonContainer.appendChild(thinButton);
 
 // Event Listener
@@ -326,7 +330,7 @@ thinButton.addEventListener("click", () => {
 // Button
 const thickButton = document.createElement("button");
 thickButton.innerHTML = "Thick";
-thickButton.style.backgroundColor = "transparent";
+thickButton.className = "tool-bar";
 buttonContainer.appendChild(thickButton);
 
 // Event Listener
@@ -339,46 +343,6 @@ thickButton.addEventListener("click", () => {
   toolType = "brush";
 });
 // #endregion
-
-//#region Add Button
-const addButton = document.createElement("button");
-addButton.innerHTML = "+";
-addButton.style.backgroundColor = "transparent";
-buttonContainer.appendChild(addButton);
-
-addButton.addEventListener("click", () => {
-  const result: string | null = prompt("Add New Sticker", "🧝");
-  if (result) {
-    CreateStickerButton(result);
-  }
-});
-//#endregion
-
-//#region Export Button
-const exportButton = document.createElement("button");
-exportButton.innerHTML = "Export";
-exportButton.style.backgroundColor = "transparent";
-buttonContainer.appendChild(exportButton);
-
-exportButton.addEventListener("click", () => {
-  const exportCanvas: HTMLCanvasElement = document.createElement(
-    "canvas",
-  ) as HTMLCanvasElement;
-  exportCanvas.width = 1024;
-  exportCanvas.height = 1024;
-  const exportCtx: CanvasRenderingContext2D = exportCanvas.getContext(
-    "2d",
-  ) as CanvasRenderingContext2D;
-  exportCtx.scale(4, 4);
-  exportCtx.textAlign = "center";
-  redraw(exportCtx);
-
-  const anchor = document.createElement("a");
-  anchor.href = exportCanvas.toDataURL("image/png");
-  anchor.download = "sketchpad.png";
-  anchor.click();
-});
-//#endregion
 
 function CreateStickerButton(emoji: string) {
   const newButton: HTMLButtonElement = document.createElement(
@@ -403,6 +367,45 @@ stickerButtons.push("🥞");
 
 stickerButtons.forEach((element) => {
   CreateStickerButton(element);
+});
+//#endregion
+//#region Add Button
+const addButton = document.createElement("button");
+addButton.innerHTML = "Add";
+addButton.className = "options";
+buttonContainer.appendChild(addButton);
+
+addButton.addEventListener("click", () => {
+  const result: string | null = prompt("Add New Sticker", "🧝");
+  if (result) {
+    CreateStickerButton(result);
+  }
+});
+//#endregion
+
+//#region Export Button
+const exportButton = document.createElement("button");
+exportButton.innerHTML = "Export";
+exportButton.className = "options";
+buttonContainer.appendChild(exportButton);
+
+exportButton.addEventListener("click", () => {
+  const exportCanvas: HTMLCanvasElement = document.createElement(
+    "canvas",
+  ) as HTMLCanvasElement;
+  exportCanvas.width = 1024;
+  exportCanvas.height = 1024;
+  const exportCtx: CanvasRenderingContext2D = exportCanvas.getContext(
+    "2d",
+  ) as CanvasRenderingContext2D;
+  exportCtx.scale(4, 4);
+  exportCtx.textAlign = "center";
+  redraw(exportCtx);
+
+  const anchor = document.createElement("a");
+  anchor.href = exportCanvas.toDataURL("image/png");
+  anchor.download = "sketchpad.png";
+  anchor.click();
 });
 //#endregion
 //#endregion
