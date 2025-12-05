@@ -53,6 +53,142 @@ bus.addEventListener("tool-changed", () => {
 });
 //#endregion
 
+//#region Commands
+const _commands: Command[] = [];
+const _redoCommands: Command[] = [];
+
+class Command {
+  constructor() {}
+
+  drag(_point: Point): void {}
+  display(_ctx: CanvasRenderingContext2D): void {}
+}
+//#endregion
+
+//#region LineCommand
+////////////////////////////////       Line Command Class          ////////////////////////////////////////////////////////
+
+class LineCommand extends Command {
+  line: Point[] = [];
+  brushSize: number;
+
+  constructor(startingPoint: Point, width: number) {
+    super();
+    this.line = [startingPoint];
+    this.brushSize = width;
+  }
+
+  override display(ctx: CanvasRenderingContext2D): void {
+    if (this.line.length < 1) {
+      return;
+    }
+    ctx.lineWidth = this.brushSize;
+    ctx.beginPath();
+    ctx.moveTo(this.line[0].x, this.line[0].y); // start at the first point
+    this.line.forEach((point: Point) => ctx.lineTo(point.x, point.y)); // move endpoint to next point
+    ctx.stroke();
+  }
+
+  override drag(endPoint: Point): void {
+    this.line.push(endPoint);
+  }
+}
+// #endregion
+
+//#region StickerCommand
+class StickerCommand extends Command {
+  point: Point;
+  text: string;
+
+  constructor(point: Point, text: string) {
+    super();
+    this.point = point;
+    this.text = text;
+  }
+
+  override display(ctx: CanvasRenderingContext2D): void {
+    if (ctx) {
+      ctx.font = "50px sans serif";
+      ctx.fillText(this.text, this.point.x, this.point.y);
+    }
+  }
+}
+//#endregion
+
+//#region ToolPreviewCommand
+////////////////////////////////       Tool Preview Class          ////////////////////////////////////////////////////////
+
+class ToolPreviewCommand extends Command {
+  radius: number;
+  mouse: Point;
+
+  constructor(mousePosition: Point, brushSize: number) {
+    super();
+    this.mouse = mousePosition;
+    this.radius = 1.0 * brushSize;
+  }
+
+  override display(ctx: CanvasRenderingContext2D) {
+    ctx.beginPath();
+    ctx.arc(this.mouse.x, this.mouse.y, this.radius, 0, 2 * Math.PI);
+    ctx.fill();
+  }
+}
+
+//#endregion
+
+//#region StickerPreviewCommand
+class StickerPreviewCommand extends Command {
+  point: Point;
+  text: string;
+
+  constructor(point: Point, text: string) {
+    super();
+    this.point = point;
+    this.text = text;
+  }
+
+  override display(ctx: CanvasRenderingContext2D) {
+    ctx.font = "50px sans serif";
+    ctx.fillText(this.text, this.point.x, this.point.y);
+  }
+
+  override drag(point: Point) {
+    console.log("Sticker preview drag");
+    this.point = point;
+    if (ctx) {
+      ctx.font = "50px sans serif";
+      ctx.fillText(this.text, this.point.x, this.point.y);
+    }
+  }
+}
+
+//#endregion
+
+//#region Redraw
+////////////////////////////////       Redraw Function        ////////////////////////////////////////////////////////
+function redraw(drawCTX: CanvasRenderingContext2D) {
+  if (drawCTX) {
+    drawCTX.clearRect(0, 0, canvas.width, canvas.height); // Clear canvas from 0,0 to maxwidth, maxheight
+    drawCTX.fillStyle = "white";
+    drawCTX.fillRect(0, 0, 1024, 1024);
+    drawCTX.fillStyle = "black";
+    lines.forEach((line: LineCommand) =>
+      line.display(drawCTX as CanvasRenderingContext2D)
+    );
+    if (toolPreview && (brushType == "brush")) {
+      toolPreview.display(drawCTX);
+    }
+    stickers.forEach((sticker: StickerCommand) =>
+      sticker.display(drawCTX as CanvasRenderingContext2D)
+    );
+    if (stickerPreview && (brushType == "sticker")) {
+      stickerPreview.display(drawCTX);
+    }
+  }
+}
+// #endregion
+
 //#region Mouse Input
 ////////////////////////////////       Mouse Input          ////////////////////////////////////////////////////////
 canvas.addEventListener("mouseover", (e) => {
@@ -151,123 +287,7 @@ canvas.addEventListener("mouseup", (e) => {
 });
 //#endregion
 
-//#region LineCommand
-////////////////////////////////       Line Command Class          ////////////////////////////////////////////////////////
-
-class LineCommand {
-  line: Point[] = [];
-  brushSize: number;
-
-  constructor(startingPoint: Point, width: number) {
-    this.line = [startingPoint];
-    this.brushSize = width;
-  }
-
-  display(ctx: CanvasRenderingContext2D) {
-    if (this.line.length < 1) {
-      return;
-    }
-    ctx.lineWidth = this.brushSize;
-    ctx.beginPath();
-    ctx.moveTo(this.line[0].x, this.line[0].y); // start at the first point
-    this.line.forEach((point: Point) => ctx.lineTo(point.x, point.y)); // move endpoint to next point
-    ctx.stroke();
-  }
-
-  drag(endPoint: Point) {
-    this.line.push(endPoint);
-  }
-}
-// #endregion
-
-class StickerCommand {
-  point: Point;
-  text: string;
-
-  constructor(point: Point, text: string) {
-    this.point = point;
-    this.text = text;
-  }
-
-  displaySticker(ctx: CanvasRenderingContext2D) {
-    if (ctx) {
-      ctx.font = "50px sans serif";
-      ctx.fillText(this.text, this.point.x, this.point.y);
-    }
-  }
-}
-
-//#region ToolPreviewCommand
-////////////////////////////////       Tool Preview Class          ////////////////////////////////////////////////////////
-
-class ToolPreviewCommand {
-  radius: number;
-  mouse: Point;
-
-  constructor(mousePosition: Point, brushSize: number) {
-    this.mouse = mousePosition;
-    this.radius = 1.0 * brushSize;
-  }
-
-  DrawPreview(ctx: CanvasRenderingContext2D) {
-    ctx.beginPath();
-    ctx.arc(this.mouse.x, this.mouse.y, this.radius, 0, 2 * Math.PI);
-    ctx.fillStyle = "black";
-    ctx.fill();
-    ctx.stroke();
-  }
-}
-
-class StickerPreviewCommand {
-  point: Point;
-  text: string;
-
-  constructor(point: Point, text: string) {
-    this.point = point;
-    this.text = text;
-  }
-
-  DrawStickerPreview(ctx: CanvasRenderingContext2D) {
-    ctx.font = "50px sans serif";
-    ctx.fillText(this.text, this.point.x, this.point.y);
-  }
-
-  drag(point: Point) {
-    console.log("Sticker preview drag");
-    this.point = point;
-    if (ctx) {
-      ctx.font = "50px sans serif";
-      ctx.fillText(this.text, this.point.x, this.point.y);
-    }
-  }
-}
-
-//#endregion
-
-//#region Redraw
-////////////////////////////////       Redraw Function        ////////////////////////////////////////////////////////
-function redraw(drawCTX: CanvasRenderingContext2D) {
-  if (drawCTX) {
-    drawCTX.clearRect(0, 0, canvas.width, canvas.height); // Clear canvas from 0,0 to maxwidth, maxheight
-    drawCTX.fillStyle = "white";
-    drawCTX.fillRect(0, 0, 1024, 1024);
-    drawCTX.fillStyle = "black";
-    lines.forEach((line: LineCommand) =>
-      line.display(drawCTX as CanvasRenderingContext2D)
-    );
-    if (toolPreview && (brushType == "brush")) {
-      toolPreview.DrawPreview(drawCTX);
-    }
-    stickers.forEach((sticker: StickerCommand) =>
-      sticker.displaySticker(drawCTX as CanvasRenderingContext2D)
-    );
-    if (stickerPreview && (brushType == "sticker")) {
-      stickerPreview.DrawStickerPreview(drawCTX);
-    }
-  }
-}
-// #endregion
-
+//#region Buttons
 //#region Clear Button
 ////////////////////////////////       Clear Button         ////////////////////////////////////////////////////////
 // Clear Button
@@ -401,8 +421,8 @@ exportButton.addEventListener("click", () => {
   const exportCanvas: HTMLCanvasElement = document.createElement(
     "canvas",
   ) as HTMLCanvasElement;
-  //exportCanvas.width = 1024;
-  //exportCanvas.height = 1024;
+  exportCanvas.width = 1024;
+  exportCanvas.height = 1024;
   exportCanvas.setAttribute("width", "1024px");
   exportCanvas.setAttribute("height", "1024px");
   const exportCtx = exportCanvas.getContext(
@@ -411,7 +431,7 @@ exportButton.addEventListener("click", () => {
 
   exportCtx.scale(4, 4);
   exportCtx.save();
-  redraw(exportCtx);
+  //redraw(exportCtx);
 
   const anchor = document.createElement("a");
   anchor.href = canvas.toDataURL("image/png");
@@ -446,4 +466,5 @@ stickerButtons.push("🥞");
 stickerButtons.forEach((element) => {
   CreateStickerButton(element);
 });
+//#endregion
 //#endregion
