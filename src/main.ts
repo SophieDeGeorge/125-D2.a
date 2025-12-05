@@ -195,10 +195,6 @@ class StickerCommand {
       ctx.fillText(this.text, this.point.x, this.point.y);
     }
   }
-
-  drag(_point: Point) {
-    console.log("Sticker drag");
-  }
 }
 
 //#region ToolPreviewCommand
